@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EMAS Designer</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+
 
     <style>
         footer {
@@ -121,57 +123,110 @@
         </div>
         <div class="col-md-3" v-if="selectedElement !== null">
             <h5>Eigenschaften</h5>
-            <div class="mb-3">
-                <label class="form-label">Element ID</label>
+            <!-- Element ID -->
+            <div class="mb-3" v-if="['textbox', 'combobox', 'checkbox', 'date', 'time', 'separator'].includes(formElements[selectedElement].type)">
+                <label class="form-label">
+                    Element ID 
+                    <i class="fas fa-info-circle" data-toggle="tooltip" title="Eindeutige ID des Oberflächenelements."></i>
+                </label>
                 <input type="text" class="form-control" v-model="formElements[selectedElement].elementId">
             </div>
-            <div class="mb-3">
-                <label class="form-label">Bezeichnung</label>
+
+            <!-- Label Text -->
+            <div class="mb-3" v-if="['textbox', 'combobox', 'checkbox', 'date', 'time'].includes(formElements[selectedElement].type)">
+                <label class="form-label">
+                    Bezeichnung 
+                    <i class="fas fa-info-circle" data-toggle="tooltip" title="Der Labeltext für das einsprechende Oberflächenelement."></i>
+                </label>
                 <input type="text" class="form-control" v-model="formElements[selectedElement].labelText">
             </div>
-            <div class="mb-3">
-                <label class="form-label">Zulässige Textlenge (0=kein Limit)</label>
+
+            <!-- Text Length -->
+            <div class="mb-3" v-if="['textbox', 'combobox'].includes(formElements[selectedElement].type)">
+                <label class="form-label">
+                    Zulässige Textlänge 
+                    <i class="fas fa-info-circle" data-toggle="tooltip" title="Die maximale eingebbare Textlänge."></i>
+                </label>
                 <input type="number" class="form-control" v-model="formElements[selectedElement].textLength">
             </div>
-            <div class="mb-3">
-                <label class="form-label">Schreibgeschützt</label>
+
+            <!-- Is Read Only -->
+            <div class="mb-3" v-if="['textbox', 'combobox', 'checkbox', 'date', 'time'].includes(formElements[selectedElement].type)">
+                <label class="form-label">
+                    Schreibgeschützt 
+                    <i class="fas fa-info-circle" data-toggle="tooltip" title="Nicht editierbares Oberflächenelement."></i>
+                </label>
                 <input type="checkbox" class="form-check-input" v-model="formElements[selectedElement].isReadOnly">
             </div>
-            <div class="mb-3">
-                <label class="form-label">Nur numerische Zeichen erlaubt</label>
+
+            <!-- Is Numeric -->
+            <div class="mb-3" v-if="['textbox'].includes(formElements[selectedElement].type)">
+                <label class="form-label">
+                    Nur numerische Zeichen erlaubt 
+                    <i class="fas fa-info-circle" data-toggle="tooltip" title="Findet derzeit nur bei Textboxen Berücksichtigung."></i>
+                </label>
                 <input type="checkbox" class="form-check-input" v-model="formElements[selectedElement].isNumeric">
             </div>
-            <div class="mb-3">
-                <label class="form-label">Standart Text</label>
-                <input type="text" class="form-control" v-model="formElements[selectedElement].defaultText">
-            </div>
-            <div class="mb-3">
-                <label class="form-label">Feldbeschreibung</label>
-                <input type="text" class="form-control" v-model="formElements[selectedElement].toolTip">
-            </div>
-            <div class="mb-3">
-                <label class="form-label">Zwingend erfoderlich</label>
-                <input type="checkbox" class="form-check-input" v-model="formElements[selectedElement].isMandatory">
-            </div>
-            <div class="mb-3" v-if="formElements[selectedElement].type === 'textbox'">
-                <label class="form-label">Textbox hat mehrere Zeilen</label>
-                <input type="checkbox" class="form-check-input" v-model="formElements[selectedElement].isMultiLineText">
-            </div>
-            <div class="mb-3" v-if="formElements[selectedElement].type === 'combobox'">
-                <label class="form-label">Elemente (Komma getrennt)</label>
+
+            <!-- Elements -->
+            <div class="mb-3" v-if="['combobox'].includes(formElements[selectedElement].type)">
+                <label class="form-label">
+                    Elemente (Kommasepariert) 
+                    <i class="fas fa-info-circle" data-toggle="tooltip" title="Nur bei Comboboxen-Oberflächenelementen relevant."></i>
+                </label>
                 <textarea class="form-control" v-model="comboBoxElements" @blur="updateComboBoxElements"></textarea>
             </div>
+
+            <!-- Default Text -->
+            <div class="mb-3" v-if="['textbox', 'combobox', 'checkbox'].includes(formElements[selectedElement].type)">
+                <label class="form-label">
+                    Standart Text
+                    <i class="fas fa-info-circle" data-toggle="tooltip" title="Vorbelegung eines Wertes bei der Erfassung."></i>
+                </label>
+                <input type="text" class="form-control" v-model="formElements[selectedElement].defaultText">
+            </div>
+
+            <!-- Tooltip -->
+            <div class="mb-3" v-if="['textbox', 'combobox', 'checkbox', 'date', 'time'].includes(formElements[selectedElement].type)">
+                <label class="form-label">
+                    Feldbeschreibung 
+                    <i class="fas fa-info-circle" data-toggle="tooltip" title="Tooltip für Oberflächenelemente zur Eingabehilfe."></i>
+                </label>
+                <input type="text" class="form-control" v-model="formElements[selectedElement].toolTip">
+            </div>
+
+            <!-- Is Mandatory -->
+            <div class="mb-3" v-if="['textbox', 'combobox', 'checkbox', 'date', 'time'].includes(formElements[selectedElement].type)">
+                <label class="form-label">
+                    Zwingend erfoderlich 
+                    <i class="fas fa-info-circle" data-toggle="tooltip" title="Festlegung, ob zwingend ein Wert eingetragen werden muss."></i>
+                </label>
+                <input type="checkbox" class="form-check-input" v-model="formElements[selectedElement].isMandatory">
+            </div>
+
+            <!-- Is Multi Line Text -->
+            <div class="mb-3" v-if="['textbox'].includes(formElements[selectedElement].type)">
+                <label class="form-label">
+                    Textbox hat mehrere Zeilen 
+                    <i class="fas fa-info-circle" data-toggle="tooltip" title="Nur für Textboxen vorgesehen."></i>
+                </label>
+                <input type="checkbox" class="form-check-input" v-model="formElements[selectedElement].isMultiLineText">
+            </div>
+
+            
         </div>
     </div>
     <div class="mt-5 d-flex align-items-center">
         <div>
             <button class="btn btn-success" @click="saveTemplate">Template speichern</button>
+            <button class="btn btn-primary ml-2" @click="exportJson">Exportieren als JSON</button>
         </div>
         <div class="ml-4 d-flex align-items-center">
             <label class="mr-2">. Ihre Template-ID:</label>
             <input type="text" v-model="savedTemplateId" readonly style="border: none; font-size: 24px; font-weight: bold; background-color: transparent;">
         </div>
     </div>
+    
     
     <div class="mt-3">
         <input type="number" v-model="templateId" placeholder="Template ID">
@@ -258,11 +313,49 @@ new Vue({
             });
         },
         exportJson() {
-            alert(JSON.stringify(this.formElements, null, 2));
+            const template = {
+                templateId: this.savedTemplateId || "unique_id_here", // Sie können eine Funktion hinzufügen, um eine eindeutige ID zu generieren, wenn keine vorhanden ist
+                templateName: "Template Name Here", // Sie können eine Datenbindung hinzufügen, um den Namen des Templates vom Benutzer abzurufen
+                version: "1.0",
+                configItems: this.formElements.map(element => {
+                    return {
+                        elementId: element.elementId,
+                        labelText: element.labelText,
+                        isMandatory: element.isMandatory,
+                        type: this.capitalizeFirstLetter(element.type),
+                        textLength: element.textLength,
+                        isReadOnly: element.isReadOnly,
+                        isNumeric: element.isNumeric || false,
+                        isMultiLineText: element.isMultiLineText || false,
+                        defaultText: element.defaultText || "",
+                        toolTip: element.toolTip || "",
+                        elements: element.elements || []
+                    };
+                })
+            };
+
+            const jsonData = JSON.stringify(template, null, 2);
+            const blob = new Blob([jsonData], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = 'template.json';
+
+            document.body.appendChild(a);
+            a.click();
+
+            window.URL.revokeObjectURL(url);
+        },
+
+        // Hilfsmethode, um den ersten Buchstaben eines Strings zu groß zu schreiben
+        capitalizeFirstLetter(string) {
+            return string.charAt(0).toUpperCase() + string.slice(1);
         }
+
+
     }
 });
-
 
 </script>
 
@@ -270,6 +363,12 @@ new Vue({
     <p>&copy; 2023 Feuerwehr Bad Säckingen - Christian Siebold. Alle Rechte vorbehalten.</p>
     <p>Für den Quellcode besuchen Sie unser <a href="https://github.com/budofighter/emas-designer" target="_blank">GitHub Repository</a>.</p>
 </footer>
+
+<script>
+    $(document).ready(function(){
+        $('[data-toggle="tooltip"]').tooltip(); 
+    });
+</script>
 
 </body>
 </html>
