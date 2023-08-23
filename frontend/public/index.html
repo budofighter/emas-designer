@@ -99,13 +99,9 @@
         <h1> EMAS Formular - JSON Generator</h1>
 
         <p class="lead">
-            Willkommen zum EMAS Formular-JSON-Generator! Hier können Sie Formularelemente per Drag-and-Drop hinzufügen, ihre Eigenschaften bearbeiten und das Design als JSON exportieren. Folgen Sie einfach den untenstehenden Schritten:
-            <ol>
-                <li>Wählen Sie ein Element aus der Liste "Verfügbare Elemente" aus.</li>
-                <li>Ziehen Sie es in den Bereich "Formular".</li>
-                <li>Klicken Sie auf ein Element im "Formular", um seine Eigenschaften zu bearbeiten.</li>
-                <li>Wenn Sie fertig sind, klicken Sie auf "Exportieren als JSON", um Ihr Design zu speichern.</li>
-            </ol>
+            Willkommen zum EMAS Formular-JSON-Generator! Hier können Sie Formularelemente per Drag-and-Drop hinzufügen, ihre Eigenschaften bearbeiten und das Design als JSON exportieren.
+        </p>
+        <p>
             Sie können ihr erstelltes Design in der Datenbank speichern und mit der gennerierten ID zu einem späteren Zeitpunkt weiter machen.
         </p>
 
@@ -123,11 +119,25 @@
                 <button class="btn btn-info" @click="loadTemplate">Template laden</button>
             </div>
         </div>
+        <div class="mb-5">
+            <h4>JSON-Datei laden</h4>
+            <p>Bitte wählen Sie eine vorhandene JSON-Datei aus, um ein bereits erstelltes Formular zu laden und weiter zu bearbeiten.</p>
+            <div class="mt-3">
+                <input type="file" ref="fileInput" @change="fileSelected = true" />
+                <button class="btn btn-info" v-if="fileSelected" @click="uploadJsonFile">Datei hochladen</button>
+            </div>
+        </div>
 
         <!-- Abschnitt für das Erstellen eines neuen Templates -->
         <div class="mb-5">
             <h4>Neues Template erstellen</h4>
             <p>Hier können Sie ein neues Template erstellen und exportieren.</p>
+            <ol>
+                <li>Wählen Sie ein Element aus der Liste "Verfügbare Elemente" aus.</li>
+                <li>Ziehen Sie es in den Bereich "Formular".</li>
+                <li>Klicken Sie auf ein Element im "Formular", um seine Eigenschaften zu bearbeiten.</li>
+                <li>Wenn Sie fertig sind, klicken Sie auf "Exportieren als JSON", um Ihr Design zu speichern.</li>
+            </ol>
             <div class="mb-3">
                 <label for="templateNameInput" class="form-label">Template Name:</label>
                 <input type="text" class="form-control" id="templateNameInput" v-model="templateName" placeholder="Geben Sie den Template-Namen ein">
@@ -153,6 +163,10 @@
             </div>
             <div class="col-md-3" v-if="selectedElement !== null">
                 <h5>Eigenschaften</h5>
+
+                <!-- Überschrift für den Elementtyp -->
+                <h6><strong>({{ getTranslatedType(formElements[selectedElement].type) }})</strong></h6>
+
                 <!-- Element ID -->
                 <div class="mb-3" v-if="['textbox', 'combobox', 'checkbox', 'date', 'time', 'separator'].includes(formElements[selectedElement].type)">
                     <label class="form-label">
@@ -201,7 +215,7 @@
                 <!-- Elements -->
                 <div class="mb-3" v-if="['combobox'].includes(formElements[selectedElement].type)">
                     <label class="form-label">
-                        Elemente (Kommasepariert) 
+                        Elemente (Komma-separiert) 
                         <i class="fas fa-info-circle" data-toggle="tooltip" title="Nur bei Comboboxen-Oberflächenelementen relevant."></i>
                     </label>
                     <textarea class="form-control" v-model="comboBoxElements" @blur="updateComboBoxElements"></textarea>
@@ -283,7 +297,8 @@
             comboBoxElements: '',
             templateId: null,
             templateName: '',
-            savedTemplateId: null
+            savedTemplateId: null,
+            fileSelected: false
         },
         methods: {
             startDrag(item) {
@@ -313,6 +328,9 @@
             },
             updateComboBoxElements() {
                 this.formElements[this.selectedElement].elements = this.comboBoxElements.split(',').map(item => item.trim());
+            },
+            handleFileUpload(event) {
+                this.selectedFile = event.target.files[0];  // Speichern der ausgewählten Datei
             },
             saveTemplate() {
                 console.log(JSON.stringify({ 
@@ -385,12 +403,73 @@
 
                 window.URL.revokeObjectURL(url);
             },
+            uploadJsonFile() {
+                const fileInput = this.$refs.fileInput;
+                const file = fileInput.files[0];
+                
+                if (file && file.type === 'application/json') {
+                    const reader = new FileReader();
+                    
+                    reader.onload = (event) => {
+                        try {
+                            const jsonData = JSON.parse(event.target.result);
+                            
+                            // Setzen Sie templateId und templateName aus der JSON-Datei
+                            this.templateId = jsonData.templateId;
+                            this.templateName = jsonData.templateName;
+
+                            // Leeren Sie formElements, um ein neues Formular zu starten
+                            this.formElements = [];
+
+                            // Fügen Sie jedes Element aus configItems hinzu
+                            jsonData.configItems.forEach(item => {
+                                // Konvertieren Sie den Typ und das Label des Elements in das Format, das startDrag erwartet
+                                const newItem = {
+                                    type: item.type.toLowerCase(),
+                                    label: item.labelText
+                                };
+
+                                // Fügen Sie das Element mit startDrag hinzu
+                                this.startDrag(newItem);
+
+                                // Holen Sie sich den Index des gerade hinzugefügten Elements
+                                const index = this.formElements.length - 1;
+
+                                // Aktualisieren Sie die Eigenschaften des Elements
+                                Object.keys(item).forEach(key => {
+                                    if (key !== 'type' && key !== 'labelText') {
+                                        this.formElements[index][key] = item[key];
+                                    }
+                                });
+                            });
+
+                        } catch (e) {
+                            alert('Ungültige JSON-Datei.');
+                        }
+                    };
+                    
+                    reader.readAsText(file);
+                } else {
+                    alert('Bitte laden Sie eine gültige JSON-Datei hoch.');
+                }
+            },
+            getTranslatedType(type) {
+                const translations = {
+                    'textbox': 'Textbox',
+                    'combobox': 'Combobox',
+                    'checkbox': 'Checkbox',
+                    'date': 'Datum',
+                    'time': 'Zeit',
+                    'separator': 'Separator'
+                };
+                return translations[type] || type;
+            },
+
 
             // Hilfsmethode, um den ersten Buchstaben eines Strings zu groß zu schreiben
             capitalizeFirstLetter(string) {
                 return string.charAt(0).toUpperCase() + string.slice(1);
             }
-
 
         }
     });
