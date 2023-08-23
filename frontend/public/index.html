@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EMAS Designer</title>
+    <title>e-MAS Designer</title>
 
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -86,7 +86,21 @@
             margin-top: 20px;  /* Abstand von oben */
             background-color: #f5f5f5;  /* Weißer Hintergrund */
         }
-
+        
+        .form-box-preview {
+            padding: 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+            max-width: 600px; /* oder die Breite des Formulars im Editor */
+            margin: auto;
+            background-color: #444654; /* Dark-Mode Hintergrund */
+            color: #c5c5d2; /* Textfarbe */
+        }
+        .dark-input {
+            background-color: #555; /* Graue Hintergrundfarbe für Textfelder */
+            color: #fff; /* Textfarbe */
+            border: 1px solid #777; /* Randfarbe */
+        }
     </style>
 </head>
 <body>
@@ -96,15 +110,17 @@
             <img src="/frontend/src/emas.png" alt="EMAS Logo" class="logo emas-logo">
         </div>
         
-        <h1> EMAS Formular - JSON Generator</h1>
+        <h1> e-MAS Formular - JSON Generator</h1>
 
         <p class="lead">
-            Willkommen zum EMAS Formular-JSON-Generator! Hier können Sie Formularelemente per Drag-and-Drop hinzufügen, ihre Eigenschaften bearbeiten und das Design als JSON exportieren.
+            Willkommen zum e-MAS Formular-JSON-Generator! Hier können Sie Formularelemente per Klick hinzufügen, ihre Eigenschaften bearbeiten und das Design als JSON exportieren. Diese können dan von einem Administrator in die metropoly BOS e-MAS Konfiguration eingebunden werden.
         </p>
         <p>
             Sie können ihr erstelltes Design in der Datenbank speichern und mit der gennerierten ID zu einem späteren Zeitpunkt weiter machen.
         </p>
-
+        <p>
+            Eine Live Ansicht des erstellten Formulars wird im unteren Bereich angezeigt.
+        </p>
     </div>
     
 
@@ -112,31 +128,42 @@
     <div id="app" class="container mt-5">
         <!-- Abschnitt für das Laden eines zuvor erstellten Templates -->
         <div class="mb-5">
-            <h4>Zuvor erstelltes Template laden</h4>
-            <p>Bitte geben Sie hier die TemplateID an, um ein bereits erstelltes Formular zu laden und weiter zu bearbeiten.</p>
-            <div class="mt-3">
-                <input type="text" v-model="templateId" placeholder="Template ID">
-                <button class="btn btn-info" @click="loadTemplate">Template laden</button>
+            <h4 data-bs-toggle="collapse" data-bs-target="#loadTemplateSection" style="cursor: pointer;">
+                Zuvor erstelltes Template laden 
+                <span class="fas fa-chevron-down" data-bs-toggle="collapse" data-bs-target="#loadTemplateSection"></span>
+            </h4>
+            <div id="loadTemplateSection" class="collapse">
+                <p>Bitte geben Sie hier die TemplateID an, um ein bereits erstelltes Formular zu laden und weiter zu bearbeiten.</p>
+                <div class="mt-3">
+                    <input type="text" v-model="templateId" placeholder="Template ID">
+                    <button class="btn btn-info" @click="loadTemplate">Template laden</button>
+                </div>
             </div>
         </div>
+        <hr>
         <div class="mb-5">
-            <h4>JSON-Datei laden</h4>
-            <p>Bitte wählen Sie eine vorhandene JSON-Datei aus, um ein bereits erstelltes Formular zu laden und weiter zu bearbeiten.</p>
-            <div class="mt-3">
-                <input type="file" ref="fileInput" @change="fileSelected = true" />
-                <button class="btn btn-info" v-if="fileSelected" @click="uploadJsonFile">Datei hochladen</button>
+            <h4 data-bs-toggle="collapse" data-bs-target="#loadJsonSection" style="cursor: pointer;">
+                JSON-Datei laden 
+                <span class="fas fa-chevron-down" data-bs-toggle="collapse" data-bs-target="#loadJsonSection"></span>
+            </h4>
+            <div id="loadJsonSection" class="collapse">
+                <p>Bitte wählen Sie eine vorhandene JSON-Datei aus, um ein bereits erstelltes Formular zu laden und weiter zu bearbeiten.</p>
+                <div class="mt-3">
+                    <input type="file" ref="fileInput" @change="fileSelected = true" />
+                    <button class="btn btn-info" v-if="fileSelected" @click="uploadJsonFile">Datei hochladen</button>
+                </div>
             </div>
         </div>
-
+        <hr>
         <!-- Abschnitt für das Erstellen eines neuen Templates -->
         <div class="mb-5">
-            <h4>Neues Template erstellen</h4>
+            <h4>Template bearbeiten</h4>
             <p>Hier können Sie ein neues Template erstellen und exportieren.</p>
             <ol>
                 <li>Wählen Sie ein Element aus der Liste "Verfügbare Elemente" aus.</li>
                 <li>Ziehen Sie es in den Bereich "Formular".</li>
                 <li>Klicken Sie auf ein Element im "Formular", um seine Eigenschaften zu bearbeiten.</li>
-                <li>Wenn Sie fertig sind, klicken Sie auf "Exportieren als JSON", um Ihr Design zu speichern.</li>
+                <li>Wenn Sie fertig sind, klicken Sie auf <b>"Exportieren als JSON"</b>, um Ihr Design zu herunterzuladen.</li>
             </ol>
             <div class="mb-3">
                 <label for="templateNameInput" class="form-label">Template Name:</label>
@@ -260,6 +287,48 @@
                 
             </div>
         </div>
+
+        <hr>
+
+        <!-- Live-Ansicht des Formulars -->
+        <div class="mt-5">
+            <h4>Live-Ansicht des Formulars</h4>
+            <div class="form-box-preview dark-mode">
+                <form>
+                    <h5>{{ templateName }}</h5>
+                    <div v-for="element in formElements" :key="element.elementId" class="form-group">
+                        <!-- Kein labelText für Separator -->
+                        <div v-if="element.type !== 'separator'">
+                            <label :for="element.elementId">
+                                {{ element.labelText }} 
+                                <span v-if="element.isMandatory">*</span>
+                                <i class="fas fa-info-circle" v-if="element.toolTip" :title="element.toolTip"></i>
+                            </label>
+                        </div>
+                        <!-- Eingabefelder -->
+                        <div>
+                            <!-- Textbox -->
+                            <input v-if="element.type === 'textbox'" type="text" :id="element.elementId" :readonly="element.isReadOnly" :placeholder="element.defaultText" class="dark-input">
+                            <!-- Combobox -->
+                            <select v-if="element.type === 'combobox'" :id="element.elementId" :disabled="element.isReadOnly" class="dark-input">
+                                <option v-for="opt in element.elements" :key="opt">{{ opt }}</option>
+                            </select>
+                            <!-- Checkbox -->
+                            <input v-if="element.type === 'checkbox'" type="checkbox" :id="element.elementId" :disabled="element.isReadOnly" class="dark-input">
+                            <!-- Datum -->
+                            <input v-if="element.type === 'date'" type="date" :id="element.elementId" :disabled="element.isReadOnly" class="dark-input">
+                            <!-- Zeit -->
+                            <input v-if="element.type === 'time'" type="time" :id="element.elementId" :disabled="element.isReadOnly" class="dark-input">
+                            <!-- Separator -->
+                            <hr v-if="element.type === 'separator'">
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+
+
         <div class="mt-5">
             <button class="btn btn-success mb-3" @click="saveTemplate">Template speichern</button>
             <button class="btn btn-primary ml-2 mb-3" @click="exportJson">Exportieren als JSON</button>
@@ -275,7 +344,7 @@
 
     <footer class="mt-5 text-center">
         <p>&copy; 2023 Feuerwehr Bad Säckingen - Christian Siebold. Alle Rechte vorbehalten.</p>
-        <p>Für den Quellcode besuchen Sie unser <a href="https://github.com/budofighter/emas-designer" target="_blank">GitHub Repository</a>.</p>
+        <p>metropolyBOS e-MAS ist eine Marke der <a href="https://www.geobyte.de/produkte/metropolybos" target="_blank">GEOBYTE Software GmbH</a></p>
     </footer>
 
 
